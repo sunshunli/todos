@@ -15,6 +15,21 @@
         }
     };
 
+    var filters = {
+        all: function(todos) {
+            return todos;
+        },
+        active: function(todos) {
+            return todos.filter(function (obj) {
+                return !obj.completed;
+            });
+        },
+        completed: function (todos) {
+            return todos.filter(function (obj) {
+                return obj.completed;
+            });
+        }
+    };
 
     // 创建Vue的根实例
     var app = new Vue({
@@ -27,7 +42,8 @@
             todos: todoStorage.fetch(),
             // 新输入的数据
             newTodo: '',
-            editedTodo: null
+            editedTodo: null,
+            visibility: 'all'
         },
 
         watch: {
@@ -37,7 +53,35 @@
             }
         },
 
+        computed : {
+            filteredTodos: function () {
+                return filters[this.visibility](this.todos);
+            },
+
+            remaining: function(){
+                var tmpTodos = this.todos.filter(function(obj) {
+                    return !obj.completed;
+                });
+                return tmpTodos.length;
+            },
+
+            allDone: {
+                get: function () {
+                    return this.remaining === 0;
+                },
+                set: function (value) {
+                    this.todos.forEach(function (obj) {
+                        obj.completed = value;
+                    });
+                }
+            }
+        },
+
         methods: {
+            pluralize: function(word, count) {
+                return word + (count === 1 ? '' : 's');
+            },
+
             /**
             * 将输入的数据保存到本地存储
              */
@@ -74,6 +118,10 @@
                 if (!todo.title) {
                     this.removeTodo(todo);
                 }
+            },
+
+            removeCompleted: function () {
+                this.todos = filters.active(this.todos);
             }
         },
 
@@ -88,7 +136,17 @@
 
     });
 
+    var onHashChange = function () {
+        var hash = location.hash.replace(/#\/?/, '');
+        if (filters[hash]) {
+            app.visibility = hash;
+        } else {
+            app.visibility = 'all';
+            location.hash = '';
+        }
+    };
 
+    window.onhashchange = onHashChange;
 
 
 
